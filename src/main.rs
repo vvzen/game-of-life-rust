@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use rand::Rng;
 
 #[derive(Debug, Copy, Clone)]
 struct Line {
@@ -18,6 +19,7 @@ struct Model {
     cells: Vec<Vec<bool>>,
     app_width: f32,
     app_height: f32,
+    step_size: usize,
 }
 
 fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
@@ -85,21 +87,18 @@ fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     return lines;
 }
 
-fn draw_cell(x: f32, y: f32, size: f32, alive: bool, model: &Model, canvas: &Draw) {
-    let color = if !alive { BLACK } else { WHITE };
+fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw) {
+    let size = model.step_size as f32;
 
     // Convert from the 0,0 top-left system that I'm used to,
-    // to the 0,0 is center system that nannou uses
-    let x_as_index = x * size;
-    let y_as_index = y * size;
-
-    let real_x = x_as_index - (model.app_width * 0.5) + (size * 0.5);
-    let real_y = -y_as_index + (model.app_height * 0.5) - (size * 0.5);
-
-    //real_x = real_x * size;
-    //real_y = real_y * size;
+    // to the 0,0-is-center system that nannou uses
+    let x_scaled = x as f32 * size;
+    let y_scaled = y as f32 * size;
+    let real_x = x_scaled - (model.app_width * 0.5) + (size * 0.5);
+    let real_y = -y_scaled + (model.app_height * 0.5) - (size * 0.5);
 
     //println!("Drawing cell at {}x{}", real_x, real_y);
+    let color = if !alive { BLACK } else { WHITE };
 
     canvas
         .quad()
@@ -119,7 +118,9 @@ fn model(app: &App) -> Model {
     app.new_window().size(512, 512).build().unwrap();
     app.main_window().set_resizable(false);
 
-    let lines = draw_grid(app, 32);
+    let step_size = 32;
+
+    let lines = draw_grid(app, step_size);
     println!("Created {} lines", lines.len());
 
     let window = app.window_rect();
@@ -130,10 +131,17 @@ fn model(app: &App) -> Model {
 
     let mut cells = Vec::new();
 
-    for _x in 0..10 {
+    let num_cells_x = width as i32 / step_size as i32;
+    let num_cells_y = height as i32 / step_size as i32;
+
+    let mut generator = rand::thread_rng();
+
+    for _x in 0..num_cells_x {
         let mut rows = Vec::new();
-        for _y in 0..10 {
-            rows.push(false);
+
+        for _y in 0..num_cells_y {
+            let rand_num = generator.gen_range(0, 2);
+            rows.push(rand_num != 0);
         }
         cells.push(rows);
     }
@@ -147,10 +155,11 @@ fn model(app: &App) -> Model {
     //println!("The 2D array is {:?}", cells);
 
     Model {
-        lines: lines,
-        cells: cells,
+        lines,
+        cells,
         app_width: width,
         app_height: height,
+        step_size,
     }
 }
 
@@ -170,9 +179,14 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .color(BLACK);
     }
 
-    draw_cell(0.0, 0.0, 32.0, false, model, &canvas);
-    draw_cell(1.0, 1.0, 32.0, false, model, &canvas);
-    draw_cell(2.0, 2.0, 32.0, false, model, &canvas);
+    for (i, cell_row) in model.cells.iter().enumerate() {
+        for (j, cell_value) in cell_row.iter().enumerate() {
+            draw_cell(i, j, cell_value, model, &canvas);
+        }
+    }
+
+    //draw_cell(1, 1, false, model, &canvas);
+    //draw_cell(2, 2, false, model, &canvas);
 
     canvas.background().color(WHITE);
     canvas.to_frame(app, &frame).unwrap();
