@@ -1,5 +1,7 @@
 use nannou::prelude::*;
 
+// Structs
+// ----------------------------------------------------------------------------
 pub struct Model {
     pub lines: Vec<Line>,
     pub cells: Vec<Vec<bool>>,
@@ -23,6 +25,66 @@ pub struct Line {
 #[derive(Debug, Copy, Clone)]
 pub struct Cell {
     pub is_alive: bool,
+}
+
+// Functions
+// ----------------------------------------------------------------------------
+pub fn get_neighbours(x: usize, y: usize, cells: &Vec<Vec<bool>>) -> Vec<&bool> {
+    let mut neighbours = Vec::new();
+    println!("Asked for neighbours of {},{}", x, y);
+
+    // Top neighbours
+    if y > 0 {
+        let top_row = cells.get(y - 1).unwrap();
+
+        for i in -1..1 {
+            let index = x as i32 + i;
+            let neighbour = top_row.get(index as usize);
+            match neighbour {
+                Some(x) => neighbours.push(x),
+                None => {}
+            }
+        }
+    }
+
+    // Bottom neighbours
+    if y < cells.len() - 2 {
+        println!("Cells len: {}", cells.len());
+        println!("Getting row at {}", y + 1);
+        let bottom_row = cells.get(y + 1).unwrap();
+
+        for i in -1..1 {
+            let index = x as i32 + i;
+            let neighbour = bottom_row.get(index as usize);
+            match neighbour {
+                Some(x) => neighbours.push(x),
+                None => {}
+            }
+        }
+    }
+
+    // Left and right neighbours
+    let c = cells.get(y);
+    match c {
+        Some(central_row) => {
+            // Left
+            let l_neighbour = central_row.get(x - 1);
+            match l_neighbour {
+                Some(l) => neighbours.push(l),
+                None => {}
+            }
+
+            // Right
+            let r_neighbour = central_row.get(x + 1);
+            match r_neighbour {
+                Some(r) => neighbours.push(r),
+                None => {}
+            }
+        }
+        None => {}
+    }
+
+    neighbours
 }
 
 pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {

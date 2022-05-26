@@ -81,6 +81,8 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
 
         model.cells[i] = rows.to_vec();
     }
+
+    let neighbours = lib::get_neighbours(16, 16, &model.cells);
 }
 
 fn view(app: &App, model: &lib::Model, frame: Frame) {
