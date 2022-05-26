@@ -49,6 +49,8 @@ fn model(app: &App) -> lib::Model {
     println!("Canvas size is {}x{}", width, height);
     //println!("The 2D array is {:?}", cells);
 
+    let neighbours_indices = lib::get_neighbours_indices(8, 8, &cells);
+
     lib::Model {
         lines,
         cells,
@@ -82,7 +84,11 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
         model.cells[i] = rows.to_vec();
     }
 
-    let neighbours = lib::get_neighbours(16, 16, &model.cells);
+    let neighbours_indices = lib::get_neighbours_indices(8, 8, &model.cells);
+    println!("Found {} neighbours", neighbours_indices.len());
+    for index in neighbours_indices {
+        model.cells[index.x][index.y] = false;
+    }
 }
 
 fn view(app: &App, model: &lib::Model, frame: Frame) {
