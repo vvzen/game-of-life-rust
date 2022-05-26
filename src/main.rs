@@ -10,6 +10,7 @@ struct Line {
     weight: f32,
 }
 
+#[derive(Debug, Copy, Clone)]
 struct Cell {
     is_alive: bool,
 }
@@ -20,6 +21,9 @@ struct Model {
     app_width: f32,
     app_height: f32,
     step_size: usize,
+    num_cells_x: usize,
+    num_cells_y: usize,
+    generator: rand::rngs::ThreadRng,
 }
 
 fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
@@ -160,17 +164,31 @@ fn model(app: &App) -> Model {
         app_width: width,
         app_height: height,
         step_size,
+        num_cells_x: num_cells_x as usize,
+        num_cells_y: num_cells_y as usize,
+        generator,
     }
 }
 
-fn update(_app: &App, _model: &mut Model, _update: Update) {}
+fn update(_app: &App, model: &mut Model, _update: Update) {
+    // Do the game of life
+    for i in 0..model.num_cells_x {
+        let rows = &mut model.cells[i];
+
+        for j in 0..model.num_cells_y {
+            let rand_num = model.generator.gen_range(0, 2);
+            rows[j] = rand_num != 0;
+        }
+
+        model.cells[i] = rows.to_vec();
+    }
+}
 
 fn view(app: &App, model: &Model, frame: Frame) {
     let canvas = app.draw();
 
+    // Draw the background grid
     for line in model.lines.iter() {
-        //println!("Drawing line on x={}, and weight={}", line.x, line.weight);
-
         canvas
             .line()
             .start(pt2(line.start_x, line.start_y))
@@ -179,14 +197,12 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .color(BLACK);
     }
 
+    // Draw the cells
     for (i, cell_row) in model.cells.iter().enumerate() {
         for (j, cell_value) in cell_row.iter().enumerate() {
             draw_cell(i, j, cell_value, model, &canvas);
         }
     }
-
-    //draw_cell(1, 1, false, model, &canvas);
-    //draw_cell(2, 2, false, model, &canvas);
 
     canvas.background().color(WHITE);
     canvas.to_frame(app, &frame).unwrap();
