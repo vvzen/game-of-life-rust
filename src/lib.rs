@@ -8,9 +8,24 @@ pub struct CellIndex {
     pub y: usize,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Cell {
+    pub is_alive: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CellsRow {
+    pub values: Vec<Cell>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Cells {
+    pub rows: Vec<CellsRow>,
+}
+
 pub struct Model {
     pub lines: Vec<Line>,
-    pub cells: Vec<Vec<bool>>,
+    pub cells: Cells,
     pub app_width: f32,
     pub app_height: f32,
     pub step_size: usize,
@@ -28,25 +43,20 @@ pub struct Line {
     pub weight: f32,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Cell {
-    pub is_alive: bool,
-}
-
 // Functions
 // ----------------------------------------------------------------------------
-pub fn get_neighbours_indices(x: usize, y: usize, cells: &Vec<Vec<bool>>) -> Vec<CellIndex> {
+pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex> {
     let mut neighbours = Vec::new();
     println!("Asked for neighbours of {},{}", x, y);
 
     // Top neighbours
     if y > 0 {
         let top_index = y - 1;
-        let top_row = cells.get(top_index).unwrap();
+        let top_row = cells.rows.get(top_index).unwrap();
 
         for i in -1..2 {
             let index = x as i32 + i;
-            let neighbour = top_row.get(index as usize);
+            let neighbour = top_row.values.get(index as usize);
             match neighbour {
                 Some(_x) => neighbours.push(CellIndex {
                     x: index as usize,
@@ -58,13 +68,13 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: &Vec<Vec<bool>>) -> Vec
     }
 
     // Bottom neighbours
-    if y < cells.len() - 2 {
+    if y < cells.rows.len() - 2 {
         let bottom_index = y + 1;
-        let bottom_row = cells.get(bottom_index).unwrap();
+        let bottom_row = cells.rows.get(bottom_index).unwrap();
 
         for i in -1..2 {
             let index = x as i32 + i;
-            let neighbour = bottom_row.get(index as usize);
+            let neighbour = bottom_row.values.get(index as usize);
             match neighbour {
                 Some(_x) => neighbours.push(CellIndex {
                     x: index as usize,
@@ -76,12 +86,12 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: &Vec<Vec<bool>>) -> Vec
     }
 
     // Left and right neighbours
-    let c = cells.get(y);
+    let c = cells.rows.get(y);
     match c {
         Some(central_row) => {
             // Left
             let l_index = x - 1;
-            let l_neighbour = central_row.get(l_index);
+            let l_neighbour = central_row.values.get(l_index);
             match l_neighbour {
                 Some(_l) => neighbours.push(CellIndex {
                     x: l_index as usize,
@@ -92,7 +102,7 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: &Vec<Vec<bool>>) -> Vec
 
             // Right
             let r_index = x + 1;
-            let r_neighbour = central_row.get(x + 1);
+            let r_neighbour = central_row.values.get(x + 1);
             match r_neighbour {
                 Some(_r) => neighbours.push(CellIndex {
                     x: r_index as usize,
