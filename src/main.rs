@@ -48,7 +48,6 @@ fn model(app: &App) -> lib::Model {
     let cells = lib::Cells { rows };
 
     println!("Canvas size is {}x{}", width, height);
-    //println!("The 2D array is {:?}", cells);
 
     lib::Model {
         lines,
@@ -110,22 +109,23 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
 fn view(app: &App, model: &lib::Model, frame: Frame) {
     let canvas = app.draw();
 
-    // Draw the background grid
-    for line in model.lines.iter() {
-        canvas
-            .line()
-            .start(pt2(line.start_x, line.start_y))
-            .end(pt2(line.end_x, line.end_y))
-            .weight(line.weight)
-            .color(BLACK);
-    }
-
     // Draw the cells
     for (i, cell_row) in model.cells.rows.iter().enumerate() {
         for (j, cell_value) in cell_row.values.iter().enumerate() {
             lib::draw_cell(i, j, &cell_value.is_alive, model, &canvas);
         }
     }
+
+    // Draw a grid
+    for line in model.lines.iter() {
+        canvas
+            .line()
+            .start(pt2(line.start_x, line.start_y))
+            .end(pt2(line.end_x, line.end_y))
+            .weight(line.weight)
+            .color(RED);
+    }
+
 
     canvas.background().color(WHITE);
     canvas.to_frame(app, &frame).unwrap();
