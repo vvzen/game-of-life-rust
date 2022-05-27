@@ -1,7 +1,7 @@
 use nannou::prelude::*;
 
 // NB: Don't let it grow too big or you'll get stack overflows at compile time :)
-pub const MAX_SIZE: usize = 64;
+pub const GRID_SIZE: usize = 128;
 
 // Structs
 // ----------------------------------------------------------------------------
@@ -18,12 +18,12 @@ pub struct Cell {
 
 #[derive(Debug, Copy, Clone)]
 pub struct CellsRow {
-    pub values: [Cell; MAX_SIZE],
+    pub values: [Cell; GRID_SIZE],
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Cells {
-    pub rows: [CellsRow; MAX_SIZE],
+    pub rows: [CellsRow; GRID_SIZE],
 }
 
 pub struct Model {
@@ -50,8 +50,6 @@ pub struct Line {
 // ----------------------------------------------------------------------------
 pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex> {
     let mut neighbours = Vec::new();
-    println!("Asked for neighbours of {},{}", x, y);
-
     let rows = cells.rows;
 
     // Top neighbours
@@ -119,10 +117,6 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
         None => {}
     }
 
-    //for cell_index in &neighbours {
-    //    println!("Adding index {},{}", cell_index.x, cell_index.y);
-    //}
-
     neighbours
 }
 
@@ -141,17 +135,12 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     let start_h = -height / 2;
     let end_h = height / 2;
 
+    // One day, this could procedural?
+    let current_weight = 0.5;
+
     // Horizontal lines
     for i in (start_h..end_h).step_by(step_size) {
         let current_y = i as f32;
-
-        //let show_thicker_line = match horizontal_lines.len() % 10 {
-        //    1 => true,
-        //    _ => false,
-        //};
-
-        //let current_weight = if show_thicker_line { 2.0 } else { 0.5 } as f32;
-        let current_weight = 0.5;
 
         let line_props = Line {
             start_x: start_w as f32,
@@ -168,13 +157,6 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     // Vertical lines
     for j in (start_w..end_w).step_by(step_size) {
         let current_x = j as f32;
-
-        //let show_thicker_line = match vertical_lines.len() % 10 {
-        //    1 => true,
-        //    _ => false,
-        //};
-        //let current_weight = if show_thicker_line { 2.0 } else { 0.5 } as f32;
-        let current_weight = 0.5;
 
         let line_props = Line {
             start_x: current_x,
@@ -194,14 +176,15 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
 pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw) {
     let size = model.step_size as f32;
 
-    // Convert from the 0,0 top-left system that I'm used to,
-    // to the 0,0-is-center system that nannou uses
+    // Convert from the 0,0 top-left system that I'm used to
+    // (because I programmed in Processing/Openframeworks for ages),
+    // to the 0,0-is-center system that nannou uses (which is the same
+    // that OpenGL uses, afaik)
     let x_scaled = x as f32 * size;
     let y_scaled = y as f32 * size;
     let real_x = x_scaled - (model.app_width * 0.5) + (size * 0.5);
     let real_y = -y_scaled + (model.app_height * 0.5) - (size * 0.5);
 
-    //println!("Drawing cell at {}x{}", real_x, real_y);
     let color = if !alive { BLACK } else { WHITE };
 
     canvas

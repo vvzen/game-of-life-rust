@@ -4,7 +4,6 @@ use nannou::prelude::*;
 use rand::Rng;
 
 fn main() {
-    //nannou::app(model).update(update).simple_window(view).run();
     nannou::app(model).update(update).view(view).run();
 }
 
@@ -13,7 +12,7 @@ fn model(app: &App) -> lib::Model {
     app.new_window().size(512, 512).build().unwrap();
     app.main_window().set_resizable(false);
 
-    let step_size = 32;
+    let step_size = lib::GRID_SIZE / 16;
 
     let lines = lib::draw_grid(app, step_size);
     println!("Created {} lines", lines.len());
@@ -24,10 +23,10 @@ fn model(app: &App) -> lib::Model {
     let width = window.w() as f32;
     let height = window.h() as f32;
 
-    // Create a MAX_SIZExMAX_SIZE grid on the stack
+    // Create a GRID_SIZExGRID_SIZE grid on the stack
     let mut rows = [lib::CellsRow {
-        values: [lib::Cell { is_alive: false }; lib::MAX_SIZE],
-    }; lib::MAX_SIZE];
+        values: [lib::Cell { is_alive: false }; lib::GRID_SIZE],
+    }; lib::GRID_SIZE];
 
     let num_cells_x = width as i32 / step_size as i32;
     let num_cells_y = height as i32 / step_size as i32;
@@ -35,7 +34,7 @@ fn model(app: &App) -> lib::Model {
     let mut generator = rand::thread_rng();
 
     for x in 0..num_cells_x {
-        let mut values = [lib::Cell { is_alive: false }; lib::MAX_SIZE];
+        let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
 
         for y in 0..num_cells_y {
             // Generate a random cell
