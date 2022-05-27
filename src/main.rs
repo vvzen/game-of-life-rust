@@ -3,6 +3,12 @@ mod lib;
 use nannou::prelude::*;
 use rand::Rng;
 
+// Turn on if you want to display the grid
+const DRAW_GRID: bool = false;
+
+// Increase the denominator if you want smaller cells
+pub const STEP_SIZE: usize = lib::GRID_SIZE / 32;
+
 fn main() {
     nannou::app(model).update(update).view(view).run();
 }
@@ -12,9 +18,8 @@ fn model(app: &App) -> lib::Model {
     app.new_window().size(512, 512).build().unwrap();
     app.main_window().set_resizable(false);
 
-    let step_size = lib::GRID_SIZE / 16;
 
-    let lines = lib::draw_grid(app, step_size);
+    let lines = lib::draw_grid(app, STEP_SIZE);
     println!("Created {} lines", lines.len());
 
     let window = app.window_rect();
@@ -28,8 +33,8 @@ fn model(app: &App) -> lib::Model {
         values: [lib::Cell { is_alive: false }; lib::GRID_SIZE],
     }; lib::GRID_SIZE];
 
-    let num_cells_x = width as i32 / step_size as i32;
-    let num_cells_y = height as i32 / step_size as i32;
+    let num_cells_x = width as i32 / STEP_SIZE as i32;
+    let num_cells_y = height as i32 / STEP_SIZE as i32;
 
     let mut generator = rand::thread_rng();
 
@@ -52,9 +57,9 @@ fn model(app: &App) -> lib::Model {
     lib::Model {
         lines,
         cells,
+        cell_size: STEP_SIZE,
         app_width: width,
         app_height: height,
-        step_size,
         num_cells_x: num_cells_x as usize,
         num_cells_y: num_cells_y as usize,
         generator,
@@ -117,15 +122,16 @@ fn view(app: &App, model: &lib::Model, frame: Frame) {
     }
 
     // Draw a grid
-    for line in model.lines.iter() {
-        canvas
-            .line()
-            .start(pt2(line.start_x, line.start_y))
-            .end(pt2(line.end_x, line.end_y))
-            .weight(line.weight)
-            .color(RED);
+    if DRAW_GRID {
+        for line in model.lines.iter() {
+            canvas
+                .line()
+                .start(pt2(line.start_x, line.start_y))
+                .end(pt2(line.end_x, line.end_y))
+                .weight(line.weight)
+                .color(RED);
+        }
     }
-
 
     canvas.background().color(WHITE);
     canvas.to_frame(app, &frame).unwrap();

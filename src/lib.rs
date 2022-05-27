@@ -30,9 +30,9 @@ pub struct Cells {
 pub struct Model {
     pub lines: Vec<Line>,
     pub cells: Cells,
+    pub cell_size: usize,
     pub app_width: f32,
     pub app_height: f32,
-    pub step_size: usize,
     pub num_cells_x: usize,
     pub num_cells_y: usize,
     pub generator: rand::rngs::ThreadRng,
@@ -176,7 +176,8 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
 }
 
 pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw) {
-    let size = model.step_size as f32;
+
+    let size = model.cell_size as f32;
 
     // Convert from the 0,0 top-left system that I'm used to
     // (because I programmed in Processing/Openframeworks for ages),
