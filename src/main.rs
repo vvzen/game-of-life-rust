@@ -71,7 +71,7 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
     let rows = cells.rows;
 
     for i in 0..model.num_cells_x {
-        let mut row = model.cells.rows[i];
+        let mut row = rows[i];
 
         for j in 0..model.num_cells_y {
             // Find neighbours
