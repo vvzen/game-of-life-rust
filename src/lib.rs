@@ -1,5 +1,8 @@
 use nannou::prelude::*;
 
+// NB: Don't let it grow too big or you'll get stack overflows at compile time :)
+pub const MAX_SIZE: usize = 64;
+
 // Structs
 // ----------------------------------------------------------------------------
 #[derive(Debug, Copy, Clone)]
@@ -13,14 +16,14 @@ pub struct Cell {
     pub is_alive: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct CellsRow {
-    pub values: Vec<Cell>,
+    pub values: [Cell; MAX_SIZE],
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Cells {
-    pub rows: Vec<CellsRow>,
+    pub rows: [CellsRow; MAX_SIZE],
 }
 
 pub struct Model {
@@ -49,10 +52,12 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
     let mut neighbours = Vec::new();
     println!("Asked for neighbours of {},{}", x, y);
 
+    let rows = cells.rows;
+
     // Top neighbours
     if y > 0 {
         let top_index = y - 1;
-        let top_row = cells.rows.get(top_index).unwrap();
+        let top_row = rows.get(top_index).unwrap();
 
         for i in -1..2 {
             let index = x as i32 + i;
@@ -68,9 +73,9 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
     }
 
     // Bottom neighbours
-    if y < cells.rows.len() - 2 {
+    if y < rows.len() - 2 {
         let bottom_index = y + 1;
-        let bottom_row = cells.rows.get(bottom_index).unwrap();
+        let bottom_row = rows.get(bottom_index).unwrap();
 
         for i in -1..2 {
             let index = x as i32 + i;
@@ -86,7 +91,7 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
     }
 
     // Left and right neighbours
-    let c = cells.rows.get(y);
+    let c = rows.get(y);
     match c {
         Some(central_row) => {
             // Left
