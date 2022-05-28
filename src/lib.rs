@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use std::cmp;
 
 // NB: Don't let it grow too big or you'll get stack overflows at compile time :)
 pub const GRID_SIZE: usize = 128;
@@ -60,6 +61,7 @@ pub struct Model {
     pub state: AppState,
     pub drawing_state: DrawingState,
     pub current_stroke: Vec<Point2>,
+    pub grid_points: Vec<Point2>,
 }
 
 // Functions
@@ -210,4 +212,40 @@ pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw)
         .h(size)
         .x_y(real_x, real_y)
         .color(color);
+}
+
+pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
+    // Given a input point, find the closest point on the grid (by ceiling)
+
+    let mut closest_distance = 100000000.0;
+    let mut closest_points = Vec::new();
+
+    // Find the closest distance between the given point and
+    // all of the points in the grid
+    for pt in model.grid_points.iter() {
+        let current_point = pt2(pt.x, pt.y);
+
+        let distance = in_point.distance_squared(current_point);
+
+        if distance < closest_distance {
+            closest_points.insert(0, current_point);
+            if closest_points.len() > 2 {
+                closest_points.pop();
+            }
+            closest_distance = distance;
+        }
+    }
+
+    //println!("Closest distance was: {}", closest_distance);
+
+    //println!("Closest points: {:?}", closest_points);
+    assert_eq!(closest_points.len(), 2);
+
+    let closest_x = cmp::min(closest_points[0].x as i32, closest_points[1].x as i32);
+    let closest_y = cmp::min(closest_points[0].y as i32, closest_points[1].y as i32);
+
+    let closest_point = pt2(closest_x as f32, closest_y as f32);
+
+    //println!("Closest point: {:?}", closest_point);
+    closest_point
 }

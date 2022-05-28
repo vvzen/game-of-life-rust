@@ -7,7 +7,7 @@ use rand::Rng;
 const DRAW_GRID: bool = true;
 
 // Increase the denominator if you want smaller cells
-pub const STEP_SIZE: usize = lib::GRID_SIZE / 8;
+pub const STEP_SIZE: usize = lib::GRID_SIZE / 2;
 
 fn main() {
     nannou::app(model).update(update).view(view).run();
@@ -40,8 +40,15 @@ fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
     match model.drawing_state {
         // Start drawing
         lib::DrawingState::Started => {
-            println!("Mouse moved to: {:?}", pos);
-            model.current_stroke.push(pos);
+            //println!("Mouse moved to: {:?}", pos);
+
+            // Snap the point to the grid
+            let snapped = lib::snap_to_grid(pos, &model);
+
+            // Offset it to draw it
+            let point = snapped + pt2(STEP_SIZE as f32 * 0.5, STEP_SIZE as f32 * 0.5);
+
+            model.current_stroke.push(point);
         }
         _ => {}
     }
@@ -49,7 +56,7 @@ fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
 
 fn mouse_released(_app: &App, model: &mut lib::Model, _button: MouseButton) {
     //
-    println!("Mouse released");
+    //println!("Mouse released");
 
     match model.drawing_state {
         lib::DrawingState::Started => {
@@ -89,15 +96,13 @@ fn model(app: &App) -> lib::Model {
     let num_cells_x = width as i32 / STEP_SIZE as i32;
     let num_cells_y = height as i32 / STEP_SIZE as i32;
 
+    // Initialize all of the cells
     let mut generator = rand::thread_rng();
 
     for x in 0..num_cells_x {
         let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
 
         for y in 0..num_cells_y {
-            // // Generate a random cell
-            // let rand_num = generator.gen_range(0, 2);
-            // values[y as usize].is_alive = rand_num != 0;
             values[y as usize].is_alive = false;
         }
         let row = lib::CellsRow { values };
@@ -106,9 +111,21 @@ fn model(app: &App) -> lib::Model {
     }
     let cells = lib::Cells { rows };
 
+    // Calculate the integers that make up the grid
+    let w = width as i32;
+    let h = height as i32;
+
+    let mut grid_points = Vec::new();
+
+    for y in (-h..h).step_by(STEP_SIZE) {
+        for x in (-w..w).step_by(STEP_SIZE) {
+            grid_points.push(pt2(x as f32, y as f32));
+        }
+    }
+
     println!("Canvas size is {}x{}", width, height);
 
-    lib::Model {
+    let model = lib::Model {
         lines,
         cells,
         cell_size: STEP_SIZE,
@@ -120,7 +137,19 @@ fn model(app: &App) -> lib::Model {
         state: lib::AppState::Init,
         drawing_state: lib::DrawingState::Void,
         current_stroke: Vec::new(),
-    }
+        grid_points,
+    };
+
+    println!("Cell size is {}", STEP_SIZE);
+
+    let input_point = pt2(65.0, -63.0);
+    let test_snap = lib::snap_to_grid(input_point, &model);
+    println!(
+        "Snapping {:?} to the grid produces {:?}",
+        input_point, test_snap
+    );
+
+    model
 }
 
 fn update(_app: &App, model: &mut lib::Model, _update: Update) {
