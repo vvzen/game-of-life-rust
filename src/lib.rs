@@ -3,7 +3,9 @@ use std::cmp;
 
 // NB: Don't let it grow too big or you'll get stack overflows at compile time :)
 pub const GRID_SIZE: usize = 128;
+
 pub const GRID_LINE_WEIGHT: f32 = 0.3;
+pub const CELL_SIZE: usize = 16;
 
 // Data structures
 // ----------------------------------------------------------------------------
@@ -62,6 +64,8 @@ pub struct Model {
     pub drawing_state: DrawingState,
     pub current_stroke: Vec<Point2>,
     pub grid_points: Vec<Point2>,
+    pub last_mouse_pos: Point2,
+    pub closest_points: Vec<Point2>,
 }
 
 // Functions
@@ -138,7 +142,7 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
     neighbours
 }
 
-pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
+pub fn create_grid(app: &App, step_size: usize) -> Vec<Line> {
     let mut lines = Vec::new();
     let mut horizontal_lines = Vec::new();
     let mut vertical_lines = Vec::new();
@@ -151,7 +155,7 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     let end_w = width / 2;
 
     let start_h = -height / 2;
-    let end_h = height / 2;
+    let end_h = -start_h;
 
     // This is stored per-line so that one day this could procedural
     // and different (eg: every N line, make a thicker one..)
@@ -160,6 +164,7 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     // Horizontal lines
     for i in (start_h..end_h).step_by(step_size) {
         let current_y = i as f32;
+        //println!("Adding line at {}", current_y);
 
         let line_props = Line {
             start_x: start_w as f32,
@@ -214,36 +219,70 @@ pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw)
         .color(color);
 }
 
-pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
-    // Given a input point, find the closest point on the grid (by ceiling)
+fn distance(a: &Point2, b: &Point2) -> f32 {
+    let dist: f32 = ((b.x - a.x).pow(2.0) + (b.y - a.y).pow(2.0)).sqrt();
 
-    let mut closest_distance = 100000000.0;
-    let mut closest_points = Vec::new();
+    dist
+}
+
+pub fn closest_n_points(in_point: Point2, points: &Vec<Point2>, n: usize) -> Vec<Point2> {
+    //
+
+    let mut distances = Vec::new();
+
+    //println!("---------------------------------------------------");
 
     // Find the closest distance between the given point and
     // all of the points in the grid
-    for pt in model.grid_points.iter() {
-        let current_point = pt2(pt.x, pt.y);
+    for pt in points.iter() {
+        let dist = pt.distance(in_point);
+        //println!("{:?} and {:?}, distance: {:?}", pt, in_point, dist);
 
-        let distance = in_point.distance_squared(current_point);
+        //let current_smallest = smallest_distances
+        //    .iter()
+        //    .fold(f32::INFINITY, |a, &b| a.min(b));
 
-        if distance < closest_distance {
-            closest_points.insert(0, current_point);
-            if closest_points.len() > 2 {
-                closest_points.pop();
-            }
-            closest_distance = distance;
-        }
+        distances.push((dist, pt));
     }
 
-    //println!("Closest distance was: {}", closest_distance);
+    // Sort by distance
+    //distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
+    //distances.sort_by_key(|k| k.0 as i64);
+    distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+    while distances.len() > n {
+        distances.pop();
+    }
+
+    //println!("Closest distances: {:?}", distances);
+
+    let mut closest_points = Vec::new();
+    for (_dist, point) in distances {
+        closest_points.push(pt2(point.x, point.y));
+    }
+
+    assert_eq!(closest_points.len(), n);
     //println!("Closest points: {:?}", closest_points);
-    assert_eq!(closest_points.len(), 2);
 
-    let closest_x = cmp::min(closest_points[0].x as i32, closest_points[1].x as i32);
-    let closest_y = cmp::min(closest_points[0].y as i32, closest_points[1].y as i32);
+    closest_points
+}
 
+pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
+    // Given a input point, find the closest point on the grid (by ceiling)
+
+    let closest_points = closest_n_points(in_point, &model.grid_points, 4);
+
+    // TODO: use a map()
+    let closest_xa = cmp::min(closest_points[0].x as i32, closest_points[1].x as i32);
+    let closest_xb = cmp::min(closest_points[2].x as i32, closest_points[3].x as i32);
+    let closest_x = cmp::min(closest_xa, closest_xb);
+
+    let closest_ya = cmp::min(closest_points[0].y as i32, closest_points[1].y as i32);
+    let closest_yb = cmp::min(closest_points[2].y as i32, closest_points[3].y as i32);
+    let closest_y = cmp::min(closest_ya, closest_yb);
+
+    //let closest_point = pt2(0.0, 0.0);
     let closest_point = pt2(closest_x as f32, closest_y as f32);
 
     //println!("Closest point: {:?}", closest_point);
