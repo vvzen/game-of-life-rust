@@ -151,7 +151,7 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
     let start_h = -height / 2;
     let end_h = height / 2;
 
-    // This is store per-line so that one day this could procedural
+    // This is stored per-line so that one day this could procedural
     // and different (eg: every N line, make a thicker one..)
     let current_weight = GRID_LINE_WEIGHT;
 

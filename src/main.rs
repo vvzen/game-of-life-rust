@@ -4,10 +4,10 @@ use nannou::prelude::*;
 use rand::Rng;
 
 // Turn on if you want to display the grid
-const DRAW_GRID: bool = false;
+const DRAW_GRID: bool = true;
 
 // Increase the denominator if you want smaller cells
-pub const STEP_SIZE: usize = lib::GRID_SIZE / 32;
+pub const STEP_SIZE: usize = lib::GRID_SIZE / 8;
 
 fn main() {
     nannou::app(model).update(update).view(view).run();
@@ -17,9 +17,14 @@ fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
     println!("Key pressed: {:?}", key);
 
     match key {
+        // Start
         Key::S => {
             println!("User pressed 'S' for 'Start'.");
             model.state = lib::AppState::Running;
+        }
+        // Clear
+        Key::C => {
+            model.current_stroke = Vec::new();
         }
         _ => {}
     }
@@ -33,9 +38,9 @@ fn mouse_pressed(_app: &App, model: &mut lib::Model, _button: MouseButton) {
 
 fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
     match model.drawing_state {
+        // Start drawing
         lib::DrawingState::Started => {
             println!("Mouse moved to: {:?}", pos);
-            model.current_stroke = Vec::new();
             model.current_stroke.push(pos);
         }
         _ => {}
@@ -49,7 +54,6 @@ fn mouse_released(_app: &App, model: &mut lib::Model, _button: MouseButton) {
     match model.drawing_state {
         lib::DrawingState::Started => {
             model.drawing_state = lib::DrawingState::Ended;
-            model.current_stroke = Vec::new();
         }
         _ => {}
     }
@@ -166,13 +170,14 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
 
 fn view(app: &App, model: &lib::Model, frame: Frame) {
     let canvas = app.draw();
+    canvas.background().color(WHITE);
 
     // Draw the cells
-    for (i, cell_row) in model.cells.rows.iter().enumerate() {
-        for (j, cell_value) in cell_row.values.iter().enumerate() {
-            lib::draw_cell(i, j, &cell_value.is_alive, model, &canvas);
-        }
-    }
+    //for (i, cell_row) in model.cells.rows.iter().enumerate() {
+    //    for (j, cell_value) in cell_row.values.iter().enumerate() {
+    //        lib::draw_cell(i, j, &cell_value.is_alive, model, &canvas);
+    //    }
+    //}
 
     // Draw a grid
     if DRAW_GRID {
@@ -186,6 +191,14 @@ fn view(app: &App, model: &lib::Model, frame: Frame) {
         }
     }
 
-    canvas.background().color(WHITE);
+    for pos in model.current_stroke.iter() {
+        canvas
+            .quad()
+            .w(model.cell_size as f32)
+            .h(model.cell_size as f32)
+            .x_y(pos.x, pos.y)
+            .color(BLACK);
+    }
+
     canvas.to_frame(app, &frame).unwrap();
 }
