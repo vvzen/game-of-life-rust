@@ -4,7 +4,7 @@ use nannou::prelude::*;
 pub const GRID_SIZE: usize = 128;
 pub const GRID_LINE_WEIGHT: f32 = 0.3;
 
-// Structs
+// Data structures
 // ----------------------------------------------------------------------------
 #[derive(Debug, Copy, Clone)]
 pub struct CellIndex {
@@ -27,15 +27,16 @@ pub struct Cells {
     pub rows: [CellsRow; GRID_SIZE],
 }
 
-pub struct Model {
-    pub lines: Vec<Line>,
-    pub cells: Cells,
-    pub cell_size: usize,
-    pub app_width: f32,
-    pub app_height: f32,
-    pub num_cells_x: usize,
-    pub num_cells_y: usize,
-    pub generator: rand::rngs::ThreadRng,
+pub enum AppState {
+    Init,
+    Running,
+    ShouldReset,
+}
+
+pub enum DrawingState {
+    Started,
+    Ended,
+    Void,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -45,6 +46,20 @@ pub struct Line {
     pub end_x: f32,
     pub end_y: f32,
     pub weight: f32,
+}
+
+pub struct Model {
+    pub lines: Vec<Line>,
+    pub cells: Cells,
+    pub cell_size: usize,
+    pub app_width: f32,
+    pub app_height: f32,
+    pub num_cells_x: usize,
+    pub num_cells_y: usize,
+    pub generator: rand::rngs::ThreadRng,
+    pub state: AppState,
+    pub drawing_state: DrawingState,
+    pub current_stroke: Vec<Point2>,
 }
 
 // Functions
@@ -176,7 +191,6 @@ pub fn draw_grid(app: &App, step_size: usize) -> Vec<Line> {
 }
 
 pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw) {
-
     let size = model.cell_size as f32;
 
     // Convert from the 0,0 top-left system that I'm used to

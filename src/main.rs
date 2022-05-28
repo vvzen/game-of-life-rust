@@ -13,20 +13,69 @@ fn main() {
     nannou::app(model).update(update).view(view).run();
 }
 
+fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
+    println!("Key pressed: {:?}", key);
+
+    match key {
+        Key::S => {
+            println!("User pressed 'S' for 'Start'.");
+            model.state = lib::AppState::Running;
+        }
+        _ => {}
+    }
+}
+
+fn mouse_pressed(_app: &App, model: &mut lib::Model, _button: MouseButton) {
+    //
+    println!("Mouse pressed");
+    model.drawing_state = lib::DrawingState::Started;
+}
+
+fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
+    match model.drawing_state {
+        lib::DrawingState::Started => {
+            println!("Mouse moved to: {:?}", pos);
+            model.current_stroke = Vec::new();
+            model.current_stroke.push(pos);
+        }
+        _ => {}
+    }
+}
+
+fn mouse_released(_app: &App, model: &mut lib::Model, _button: MouseButton) {
+    //
+    println!("Mouse released");
+
+    match model.drawing_state {
+        lib::DrawingState::Started => {
+            model.drawing_state = lib::DrawingState::Ended;
+            model.current_stroke = Vec::new();
+        }
+        _ => {}
+    }
+}
+
 fn model(app: &App) -> lib::Model {
     // Set up the window size
-    app.new_window().size(512, 512).build().unwrap();
-    app.main_window().set_resizable(false);
+    app.new_window()
+        .title("Game of Life")
+        .key_pressed(key_pressed)
+        .mouse_pressed(mouse_pressed)
+        .mouse_moved(mouse_moved)
+        .mouse_released(mouse_released)
+        .size(512, 512)
+        .build()
+        .unwrap();
 
+    app.main_window().set_resizable(false);
 
     let lines = lib::draw_grid(app, STEP_SIZE);
     println!("Created {} lines", lines.len());
 
-    let window = app.window_rect();
-    //let width_i = window.w() as i32;
-    //let height_i = window.h() as i32;
-    let width = window.w() as f32;
-    let height = window.h() as f32;
+    let window_rect = app.window_rect();
+
+    let width = window_rect.w() as f32;
+    let height = window_rect.h() as f32;
 
     // Create a GRID_SIZExGRID_SIZE grid on the stack
     let mut rows = [lib::CellsRow {
@@ -42,9 +91,10 @@ fn model(app: &App) -> lib::Model {
         let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
 
         for y in 0..num_cells_y {
-            // Generate a random cell
-            let rand_num = generator.gen_range(0, 2);
-            values[y as usize].is_alive = rand_num != 0;
+            // // Generate a random cell
+            // let rand_num = generator.gen_range(0, 2);
+            // values[y as usize].is_alive = rand_num != 0;
+            values[y as usize].is_alive = false;
         }
         let row = lib::CellsRow { values };
 
@@ -63,6 +113,9 @@ fn model(app: &App) -> lib::Model {
         num_cells_x: num_cells_x as usize,
         num_cells_y: num_cells_y as usize,
         generator,
+        state: lib::AppState::Init,
+        drawing_state: lib::DrawingState::Void,
+        current_stroke: Vec::new(),
     }
 }
 
