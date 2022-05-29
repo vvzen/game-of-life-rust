@@ -200,37 +200,7 @@ fn view(app: &App, model: &lib::Model, frame: Frame) {
                 .weight(line.weight)
                 .color(WHITE);
         }
-
-        // Debugging: draw the coordinates too
-        //for point in &model.grid_points {
-        //    let text = format!("{},{}", point.x, point.y);
-
-        //    canvas
-        //        .text(&text)
-        //        .font_size(16)
-        //        .x_y(point.x, point.y)
-        //        .color(RED);
-        //}
     }
-
-    // Debug: draw the current mouse position
-    //let mouse_pos = format!("{},{}", model.last_mouse_pos.x, model.last_mouse_pos.y);
-
-    //canvas
-    //    .text(&mouse_pos)
-    //    .font_size(16)
-    //    .x_y(model.last_mouse_pos.x, model.last_mouse_pos.y)
-    //    .color(RED);
-
-    // Draw the current closest points to the mouse
-    //for close_point in model.closest_points.iter() {
-    //    canvas
-    //        .ellipse()
-    //        .w(32.0)
-    //        .h(32.0)
-    //        .x_y(close_point.x, close_point.y)
-    //        .color(rgba(0.0, 0.0, 0.0, 0.5));
-    //}
 
     canvas.to_frame(app, &frame).unwrap();
 }
