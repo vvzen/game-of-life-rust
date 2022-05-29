@@ -35,7 +35,6 @@ pub struct Cells {
 pub enum AppState {
     Init,
     Running,
-    ShouldReset,
 }
 
 pub enum DrawingState {
@@ -63,6 +62,7 @@ pub struct Model {
     pub num_cells_y: usize,
     pub state: AppState,
     pub should_draw_grid: bool,
+    pub should_draw_white: bool,
     pub drawing_state: DrawingState,
     pub current_stroke: Vec<Point2>,
     pub grid_points: Vec<Point2>,
@@ -291,22 +291,28 @@ pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
     closest_point
 }
 
+pub fn get_all_cells_as_dead() -> [CellsRow; GRID_SIZE] {
+    let rows = [CellsRow {
+        values: [Cell { is_alive: false }; GRID_SIZE],
+    }; GRID_SIZE];
+
+    rows
+}
+
 pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Cells {
     //
     let mut generator = rand::thread_rng();
 
-    let mut rows = [CellsRow {
-        values: [Cell { is_alive: false }; GRID_SIZE],
-    }; GRID_SIZE];
+    let mut rows = get_all_cells_as_dead();
 
     for x in 0..num_cells_x {
         let mut values = [Cell { is_alive: false }; GRID_SIZE];
 
         for y in 0..num_cells_y {
             if randomize {
-                values[y as usize].is_alive = false;
+                values[y as usize].is_alive = generator.gen_bool(0.01);
             } else {
-                values[y as usize].is_alive = generator.gen_bool(0.5);
+                values[y as usize].is_alive = false;
             }
         }
         let row = CellsRow { values };
@@ -315,4 +321,50 @@ pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Ce
     }
 
     Cells { rows }
+}
+
+pub fn game_of_life(model: &mut Model) {
+    // Shorthands
+    let cells = model.cells;
+    let rows = cells.rows;
+
+    for i in 0..model.num_cells_x {
+        let mut row = rows[i];
+
+        for j in 0..model.num_cells_y {
+            // Find neighbours
+            let neighbours_indices = get_neighbours_indices(i, j, cells);
+
+            let mut alive_neighbours = Vec::new();
+            let mut dead_neighbours = Vec::new();
+
+            for cell_index in neighbours_indices {
+                let cell = rows[cell_index.x].values[cell_index.y];
+                if cell.is_alive {
+                    alive_neighbours.push(cell);
+                } else {
+                    dead_neighbours.push(cell);
+                }
+            }
+
+            // Do the game of life..
+
+            // 1. Any live cell with two or three live neighbours survives
+            // 2. Any dead cell with three live neighbours becomes a live cell
+            // 3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+            if row.values[j].is_alive {
+                match alive_neighbours.len() {
+                    2 | 3 => row.values[j] = Cell { is_alive: true },
+                    _ => row.values[j] = Cell { is_alive: false },
+                }
+            } else {
+                match alive_neighbours.len() {
+                    3 => row.values[j] = Cell { is_alive: true },
+                    _ => row.values[j] = Cell { is_alive: false },
+                }
+            }
+        }
+
+        model.cells.rows[i] = CellsRow { values: row.values };
+    }
 }
