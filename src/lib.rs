@@ -1,5 +1,3 @@
-use std::cmp;
-
 use nannou::prelude::*;
 use rand::Rng;
 
@@ -279,9 +277,7 @@ pub fn get_all_cells_as_dead() -> [CellsRow; GRID_SIZE] {
 }
 
 pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Cells {
-    //
     let mut generator = rand::thread_rng();
-
     let mut rows = get_all_cells_as_dead();
 
     for x in 0..num_cells_x {
@@ -289,7 +285,7 @@ pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Ce
 
         for y in 0..num_cells_y {
             if randomize {
-                values[y as usize].is_alive = generator.gen_bool(0.01);
+                values[y as usize].is_alive = generator.gen_bool(0.5);
             } else {
                 values[y as usize].is_alive = false;
             }
