@@ -176,13 +176,22 @@ fn model(app: &App) -> lib::Model {
         grid_points,
         last_mouse_pos: pt2(0.0, 0.0),
         closest_points: Vec::new(),
+        generations: 0,
     }
 }
 
-fn update(_app: &App, model: &mut lib::Model, _update: Update) {
+fn update(app: &App, model: &mut lib::Model, _update: Update) {
+    if app.elapsed_frames() % 5 != 0 {
+        return;
+    }
+
     // Do the game of life only when needed
     match model.state {
-        lib::AppState::Running => lib::game_of_life(model),
+        lib::AppState::Running => {
+            lib::game_of_life(model);
+            model.generations = model.generations + 1;
+            println!("Generation: {}", model.generations);
+        }
         _ => return,
     }
 }
@@ -190,6 +199,10 @@ fn update(_app: &App, model: &mut lib::Model, _update: Update) {
 fn view(app: &App, model: &lib::Model, frame: Frame) {
     let canvas = app.draw();
     canvas.background().color(BLACK);
+
+    if app.elapsed_frames() % 5 != 0 {
+        return;
+    }
 
     // Draw the cells
     for (i, cell_row) in model.cells.rows.iter().enumerate() {

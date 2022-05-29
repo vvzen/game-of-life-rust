@@ -5,7 +5,7 @@ use rand::Rng;
 pub const GRID_SIZE: usize = 128;
 
 pub const GRID_LINE_WEIGHT: f32 = 0.3;
-pub const CELL_SIZE: usize = 8;
+pub const CELL_SIZE: usize = 4;
 
 // Data structures
 // ----------------------------------------------------------------------------
@@ -66,6 +66,7 @@ pub struct Model {
     pub grid_points: Vec<Point2>,
     pub last_mouse_pos: Point2,
     pub closest_points: Vec<Point2>,
+    pub generations: i64,
 }
 
 // Functions
