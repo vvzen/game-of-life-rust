@@ -1,118 +1,187 @@
 mod lib;
 
 use nannou::prelude::*;
-use rand::Rng;
-
-// Turn on if you want to display the grid
-const DRAW_GRID: bool = false;
-
-// Increase the denominator if you want smaller cells
-pub const STEP_SIZE: usize = lib::GRID_SIZE / 32;
 
 fn main() {
     nannou::app(model).update(update).view(view).run();
 }
 
+fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
+    //println!("Key pressed: {:?}", key);
+
+    match key {
+        // Start
+        Key::S => {
+            println!("User pressed 'S' for 'Start'.");
+            model.state = lib::AppState::Running;
+        }
+        // Toggle grid
+        Key::G => {
+            model.should_draw_grid = !model.should_draw_grid;
+        }
+        // Clear
+        Key::C => {
+            model.cells.rows = lib::get_all_cells_as_dead();
+        }
+        // Reset
+        Key::R => {
+            println!("User pressed 'R' for 'Reset'.");
+
+            model.current_stroke = Vec::new();
+            model.state = lib::AppState::Init;
+
+            let cells = lib::init_cells(model.num_cells_x, model.num_cells_y, true);
+            model.cells = cells;
+        }
+        _ => {}
+    }
+}
+
+fn mouse_pressed(_app: &App, model: &mut lib::Model, button: MouseButton) {
+    //
+    println!("Mouse pressed: {:?}", button);
+    model.drawing_state = lib::DrawingState::Started;
+    match button {
+        MouseButton::Left => model.should_draw_white = true,
+        MouseButton::Right => model.should_draw_white = false,
+        _ => {}
+    }
+}
+
+fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
+    //
+    model.last_mouse_pos = pt2(pos.x, pos.y);
+
+    let closest_points = lib::closest_n_points(pos, &model.grid_points, 4);
+    model.closest_points = closest_points;
+
+    match model.state {
+        lib::AppState::Init => {
+            match model.drawing_state {
+                // Start drawing
+                lib::DrawingState::Started => {
+                    // Snap the point to the grid
+                    let snapped = lib::snap_to_grid(pos, &model);
+
+                    // Discard clicks outside the target area
+                    if snapped.x.abs() > model.app_width * 0.5 {
+                        return;
+                    }
+                    if snapped.y.abs() > model.app_height * 0.5 {
+                        return;
+                    }
+
+                    // Map the point to a cell in the grid
+                    let cell_index_x = map_range(
+                        snapped.x,
+                        -model.app_width * 0.5,
+                        model.app_width * 0.5,
+                        0,
+                        model.num_cells_x,
+                    );
+                    let cell_index_y = map_range(
+                        snapped.y,
+                        -model.app_height * 0.5,
+                        model.app_height * 0.5,
+                        model.num_cells_y - 1,
+                        0,
+                    );
+
+                    let is_alive = model.should_draw_white;
+                    model.cells.rows[cell_index_x].values[cell_index_y].is_alive = is_alive;
+                }
+                _ => {}
+            }
+        }
+        _ => {}
+    }
+}
+
+fn mouse_released(_app: &App, model: &mut lib::Model, _button: MouseButton) {
+    //
+    //println!("Mouse released");
+
+    match model.drawing_state {
+        lib::DrawingState::Started => {
+            model.drawing_state = lib::DrawingState::Ended;
+        }
+        _ => {}
+    }
+}
+
 fn model(app: &App) -> lib::Model {
-    // Set up the window size
-    app.new_window().size(512, 512).build().unwrap();
-    app.main_window().set_resizable(false);
+    // Set up the window
+    app.new_window()
+        .title("Game of Life")
+        .key_pressed(key_pressed)
+        .mouse_pressed(mouse_pressed)
+        .mouse_moved(mouse_moved)
+        .mouse_released(mouse_released)
+        .size(512, 512)
+        .build()
+        .unwrap();
 
+    //app.main_window().set_resizable(false);
 
-    let lines = lib::draw_grid(app, STEP_SIZE);
+    let lines = lib::create_grid(app, lib::CELL_SIZE);
     println!("Created {} lines", lines.len());
 
-    let window = app.window_rect();
-    //let width_i = window.w() as i32;
-    //let height_i = window.h() as i32;
-    let width = window.w() as f32;
-    let height = window.h() as f32;
+    let window_rect = app.window_rect();
 
-    // Create a GRID_SIZExGRID_SIZE grid on the stack
-    let mut rows = [lib::CellsRow {
-        values: [lib::Cell { is_alive: false }; lib::GRID_SIZE],
-    }; lib::GRID_SIZE];
+    let width = window_rect.w() as f32;
+    let height = window_rect.h() as f32;
 
-    let num_cells_x = width as i32 / STEP_SIZE as i32;
-    let num_cells_y = height as i32 / STEP_SIZE as i32;
+    let num_cells_x = width as i32 / lib::CELL_SIZE as i32;
+    let num_cells_y = height as i32 / lib::CELL_SIZE as i32;
 
-    let mut generator = rand::thread_rng();
+    // Initialize all of the cells
+    let cells = lib::init_cells(num_cells_x as usize, num_cells_y as usize, true);
 
-    for x in 0..num_cells_x {
-        let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
+    // Calculate the integers that make up the grid
+    let w = (width) as i32;
+    let h = (height) as i32;
 
-        for y in 0..num_cells_y {
-            // Generate a random cell
-            let rand_num = generator.gen_range(0, 2);
-            values[y as usize].is_alive = rand_num != 0;
+    let mut grid_points = Vec::new();
+
+    for y in (-h..h).step_by(lib::CELL_SIZE) {
+        for x in (-w..w).step_by(lib::CELL_SIZE) {
+            grid_points.push(pt2(x as f32, y as f32));
         }
-        let row = lib::CellsRow { values };
-
-        rows[x as usize] = row;
     }
-    let cells = lib::Cells { rows };
 
     println!("Canvas size is {}x{}", width, height);
+    println!("Cell size is {}", lib::CELL_SIZE);
 
     lib::Model {
         lines,
         cells,
-        cell_size: STEP_SIZE,
+        cell_size: lib::CELL_SIZE,
         app_width: width,
         app_height: height,
         num_cells_x: num_cells_x as usize,
         num_cells_y: num_cells_y as usize,
-        generator,
+        state: lib::AppState::Init,
+        should_draw_grid: false,
+        should_draw_white: true,
+        drawing_state: lib::DrawingState::Void,
+        current_stroke: Vec::new(),
+        grid_points,
+        last_mouse_pos: pt2(0.0, 0.0),
+        closest_points: Vec::new(),
     }
 }
 
 fn update(_app: &App, model: &mut lib::Model, _update: Update) {
-    let cells = model.cells;
-    let rows = cells.rows;
-
-    for i in 0..model.num_cells_x {
-        let mut row = rows[i];
-
-        for j in 0..model.num_cells_y {
-            // Find neighbours
-            let neighbours_indices = lib::get_neighbours_indices(i, j, cells);
-
-            let mut alive_neighbours = Vec::new();
-            let mut dead_neighbours = Vec::new();
-
-            for cell_index in neighbours_indices {
-                let cell = rows[cell_index.x].values[cell_index.y];
-                if cell.is_alive {
-                    alive_neighbours.push(cell);
-                } else {
-                    dead_neighbours.push(cell);
-                }
-            }
-
-            // Do the game of life..
-
-            // 1. Any live cell with two or three live neighbours survives
-            // 2. Any dead cell with three live neighbours becomes a live cell
-            // 3. All other live cells die in the next generation. Similarly, all other dead cells stay dead.
-            if row.values[j].is_alive {
-                match alive_neighbours.len() {
-                    2 | 3 => row.values[j] = lib::Cell { is_alive: true },
-                    _ => row.values[j] = lib::Cell { is_alive: false },
-                }
-            } else {
-                match alive_neighbours.len() {
-                    3 => row.values[j] = lib::Cell { is_alive: true },
-                    _ => row.values[j] = lib::Cell { is_alive: false },
-                }
-            }
-        }
-
-        model.cells.rows[i] = lib::CellsRow { values: row.values };
+    // Do the game of life only when needed
+    match model.state {
+        lib::AppState::Running => lib::game_of_life(model),
+        _ => return,
     }
 }
 
 fn view(app: &App, model: &lib::Model, frame: Frame) {
     let canvas = app.draw();
+    canvas.background().color(BLACK);
 
     // Draw the cells
     for (i, cell_row) in model.cells.rows.iter().enumerate() {
@@ -121,18 +190,47 @@ fn view(app: &App, model: &lib::Model, frame: Frame) {
         }
     }
 
-    // Draw a grid
-    if DRAW_GRID {
+    // Draw the grid (if requested)
+    if model.should_draw_grid {
         for line in model.lines.iter() {
             canvas
                 .line()
                 .start(pt2(line.start_x, line.start_y))
                 .end(pt2(line.end_x, line.end_y))
                 .weight(line.weight)
-                .color(RED);
+                .color(WHITE);
         }
+
+        // Debugging: draw the coordinates too
+        //for point in &model.grid_points {
+        //    let text = format!("{},{}", point.x, point.y);
+
+        //    canvas
+        //        .text(&text)
+        //        .font_size(16)
+        //        .x_y(point.x, point.y)
+        //        .color(RED);
+        //}
     }
 
-    canvas.background().color(WHITE);
+    // Debug: draw the current mouse position
+    //let mouse_pos = format!("{},{}", model.last_mouse_pos.x, model.last_mouse_pos.y);
+
+    //canvas
+    //    .text(&mouse_pos)
+    //    .font_size(16)
+    //    .x_y(model.last_mouse_pos.x, model.last_mouse_pos.y)
+    //    .color(RED);
+
+    // Draw the current closest points to the mouse
+    //for close_point in model.closest_points.iter() {
+    //    canvas
+    //        .ellipse()
+    //        .w(32.0)
+    //        .h(32.0)
+    //        .x_y(close_point.x, close_point.y)
+    //        .color(rgba(0.0, 0.0, 0.0, 0.5));
+    //}
+
     canvas.to_frame(app, &frame).unwrap();
 }
