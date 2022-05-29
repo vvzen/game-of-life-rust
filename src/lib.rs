@@ -1,11 +1,13 @@
-use nannou::prelude::*;
 use std::cmp;
+
+use nannou::prelude::*;
+use rand::Rng;
 
 // NB: Don't let it grow too big or you'll get stack overflows at compile time :)
 pub const GRID_SIZE: usize = 128;
 
 pub const GRID_LINE_WEIGHT: f32 = 0.3;
-pub const CELL_SIZE: usize = 16;
+pub const CELL_SIZE: usize = 8;
 
 // Data structures
 // ----------------------------------------------------------------------------
@@ -59,8 +61,8 @@ pub struct Model {
     pub app_height: f32,
     pub num_cells_x: usize,
     pub num_cells_y: usize,
-    pub generator: rand::rngs::ThreadRng,
     pub state: AppState,
+    pub should_draw_grid: bool,
     pub drawing_state: DrawingState,
     pub current_stroke: Vec<Point2>,
     pub grid_points: Vec<Point2>,
@@ -287,4 +289,30 @@ pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
 
     //println!("Closest point: {:?}", closest_point);
     closest_point
+}
+
+pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Cells {
+    //
+    let mut generator = rand::thread_rng();
+
+    let mut rows = [CellsRow {
+        values: [Cell { is_alive: false }; GRID_SIZE],
+    }; GRID_SIZE];
+
+    for x in 0..num_cells_x {
+        let mut values = [Cell { is_alive: false }; GRID_SIZE];
+
+        for y in 0..num_cells_y {
+            if randomize {
+                values[y as usize].is_alive = false;
+            } else {
+                values[y as usize].is_alive = generator.gen_bool(0.5);
+            }
+        }
+        let row = CellsRow { values };
+
+        rows[x as usize] = row;
+    }
+
+    Cells { rows }
 }

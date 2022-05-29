@@ -1,21 +1,13 @@
 mod lib;
 
 use nannou::prelude::*;
-use rand::Rng;
-
-// Turn on if you want to display the grid
-const DRAW_GRID: bool = true;
-
-// Increase the denominator if you want smaller cells
-//pub const STEP_SIZE: usize = lib::GRID_SIZE / 2;
-pub const STEP_SIZE: usize = 64;
 
 fn main() {
     nannou::app(model).update(update).view(view).run();
 }
 
 fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
-    println!("Key pressed: {:?}", key);
+    //println!("Key pressed: {:?}", key);
 
     match key {
         // Start
@@ -23,30 +15,22 @@ fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
             println!("User pressed 'S' for 'Start'.");
             model.state = lib::AppState::Running;
         }
+        // Toggle grid
+        Key::G => {
+            model.should_draw_grid = !model.should_draw_grid;
+        }
         // Clear
         Key::C => {
             model.current_stroke = Vec::new();
         }
         // Reset
         Key::R => {
+            // FIXME: Tidy up everything
+
             println!("User pressed 'R' for 'Reset'.");
             model.state = lib::AppState::Init;
 
-            let mut rows = [lib::CellsRow {
-                values: [lib::Cell { is_alive: false }; lib::GRID_SIZE],
-            }; lib::GRID_SIZE];
-
-            for x in 0..model.num_cells_x {
-                let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
-
-                for y in 0..model.num_cells_y {
-                    values[y as usize].is_alive = false;
-                }
-                let row = lib::CellsRow { values };
-
-                rows[x as usize] = row;
-            }
-            let cells = lib::Cells { rows };
+            let cells = lib::init_cells(model.num_cells_x, model.num_cells_y, true);
             model.cells = cells;
         }
         _ => {}
@@ -99,11 +83,11 @@ fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
                         model.num_cells_y - 1,
                         0,
                     );
-                    println!(
-                        "Mapped {:?} to {:?}",
-                        point,
-                        pt2(cell_index_x as f32, cell_index_y as f32)
-                    );
+                    //println!(
+                    //    "Mapped {:?} to {:?}",
+                    //    point,
+                    //    pt2(cell_index_x as f32, cell_index_y as f32)
+                    //);
                     model.cells.rows[cell_index_x].values[cell_index_y].is_alive = true;
 
                     //model.current_stroke = Vec::new();
@@ -150,28 +134,11 @@ fn model(app: &App) -> lib::Model {
     let width = window_rect.w() as f32;
     let height = window_rect.h() as f32;
 
-    // Create a GRID_SIZExGRID_SIZE grid on the stack
-    let mut rows = [lib::CellsRow {
-        values: [lib::Cell { is_alive: false }; lib::GRID_SIZE],
-    }; lib::GRID_SIZE];
-
     let num_cells_x = width as i32 / lib::CELL_SIZE as i32;
     let num_cells_y = height as i32 / lib::CELL_SIZE as i32;
 
     // Initialize all of the cells
-    let mut generator = rand::thread_rng();
-
-    for x in 0..num_cells_x {
-        let mut values = [lib::Cell { is_alive: false }; lib::GRID_SIZE];
-
-        for y in 0..num_cells_y {
-            values[y as usize].is_alive = false;
-        }
-        let row = lib::CellsRow { values };
-
-        rows[x as usize] = row;
-    }
-    let cells = lib::Cells { rows };
+    let cells = lib::init_cells(num_cells_x as usize, num_cells_y as usize, true);
 
     // Calculate the integers that make up the grid
     let w = (width) as i32;
@@ -195,8 +162,8 @@ fn model(app: &App) -> lib::Model {
         app_height: height,
         num_cells_x: num_cells_x as usize,
         num_cells_y: num_cells_y as usize,
-        generator,
         state: lib::AppState::Init,
+        should_draw_grid: false,
         drawing_state: lib::DrawingState::Void,
         current_stroke: Vec::new(),
         grid_points,
@@ -298,7 +265,7 @@ fn view(app: &App, model: &lib::Model, frame: Frame) {
     }
 
     // Draw a grid
-    if DRAW_GRID {
+    if model.should_draw_grid {
         for line in model.lines.iter() {
             canvas
                 .line()
