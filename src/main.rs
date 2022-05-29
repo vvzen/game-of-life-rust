@@ -17,10 +17,12 @@ fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
         }
         // Toggle grid
         Key::G => {
+            println!("User pressed 'G' to toggle the grid.");
             model.should_draw_grid = !model.should_draw_grid;
         }
         // Clear
         Key::C => {
+            println!("User pressed 'C' to clear the cells.");
             model.cells.rows = lib::get_all_cells_as_dead();
         }
         // Reset
@@ -123,11 +125,7 @@ fn model(app: &App) -> lib::Model {
 
     //app.main_window().set_resizable(false);
 
-    let lines = lib::create_grid(app, lib::CELL_SIZE);
-    println!("Created {} lines", lines.len());
-
     let window_rect = app.window_rect();
-
     let width = window_rect.w() as f32;
     let height = window_rect.h() as f32;
 
@@ -149,8 +147,18 @@ fn model(app: &App) -> lib::Model {
         }
     }
 
+    // Create the lines that make up the grid
+    let lines = lib::create_grid(app, lib::CELL_SIZE);
+
     println!("Canvas size is {}x{}", width, height);
     println!("Cell size is {}", lib::CELL_SIZE);
+
+    println!("INSTRUCTIONS:");
+    println!("Draw cells with the mouse left (alive) or right (dead) button");
+    println!("Press 'G' to toggle the grid view.");
+    println!("Press 'S' to start the simulation.");
+    println!("Press 'R' to reset the simulation.");
+    println!("Press 'C' to clear all cells (set all cells to dead).");
 
     lib::Model {
         lines,

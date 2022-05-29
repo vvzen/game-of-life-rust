@@ -211,7 +211,7 @@ pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw)
     let real_x = x_scaled - (model.app_width * 0.5) + (size * 0.5);
     let real_y = -y_scaled + (model.app_height * 0.5) - (size * 0.5);
 
-    let color = if !alive { BLACK } else { WHITE };
+    let color = if !alive { BLACK } else { RED };
 
     canvas
         .quad()
@@ -219,12 +219,6 @@ pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw)
         .h(size)
         .x_y(real_x, real_y)
         .color(color);
-}
-
-fn distance(a: &Point2, b: &Point2) -> f32 {
-    let dist: f32 = ((b.x - a.x).pow(2.0) + (b.y - a.y).pow(2.0)).sqrt();
-
-    dist
 }
 
 pub fn closest_n_points(in_point: Point2, points: &Vec<Point2>, n: usize) -> Vec<Point2> {
