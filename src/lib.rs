@@ -253,16 +253,19 @@ pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
     // Given a input point, find the closest point on the grid (by ceiling)
     let closest_points = closest_n_points(in_point, &model.grid_points, 4);
 
-    // TODO: use a map()
-    let closest_xa = cmp::min(closest_points[0].x as i32, closest_points[1].x as i32);
-    let closest_xb = cmp::min(closest_points[2].x as i32, closest_points[3].x as i32);
-    let closest_x = cmp::min(closest_xa, closest_xb);
+    let smallest_x: f32 = closest_points
+        .iter()
+        .map(|e| e.x)
+        .reduce(|accum, item| if accum < item { accum } else { item })
+        .unwrap();
 
-    let closest_ya = cmp::min(closest_points[0].y as i32, closest_points[1].y as i32);
-    let closest_yb = cmp::min(closest_points[2].y as i32, closest_points[3].y as i32);
-    let closest_y = cmp::min(closest_ya, closest_yb);
+    let smallest_y: f32 = closest_points
+        .iter()
+        .map(|e| e.y)
+        .reduce(|accum, item| if accum < item { accum } else { item })
+        .unwrap();
 
-    let closest_point = pt2(closest_x as f32, closest_y as f32);
+    let closest_point = pt2(smallest_x, smallest_y);
 
     closest_point
 }
