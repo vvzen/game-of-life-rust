@@ -222,36 +222,22 @@ pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw)
 }
 
 pub fn closest_n_points(in_point: Point2, points: &Vec<Point2>, n: usize) -> Vec<Point2> {
-    //
-
-    let mut distances = Vec::new();
-
-    //println!("---------------------------------------------------");
-
     // Find the closest distance between the given point and
     // all of the points in the grid
+    let mut distances = Vec::new();
+
     for pt in points.iter() {
         let dist = pt.distance(in_point);
-        //println!("{:?} and {:?}, distance: {:?}", pt, in_point, dist);
-
-        //let current_smallest = smallest_distances
-        //    .iter()
-        //    .fold(f32::INFINITY, |a, &b| a.min(b));
 
         distances.push((dist, pt));
     }
 
     // Sort by distance
-    //distances.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-    //distances.sort_by_key(|k| k.0 as i64);
     distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
     while distances.len() > n {
         distances.pop();
     }
-
-    //println!("Closest distances: {:?}", distances);
 
     let mut closest_points = Vec::new();
     for (_dist, point) in distances {
@@ -259,14 +245,12 @@ pub fn closest_n_points(in_point: Point2, points: &Vec<Point2>, n: usize) -> Vec
     }
 
     assert_eq!(closest_points.len(), n);
-    //println!("Closest points: {:?}", closest_points);
 
     closest_points
 }
 
 pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
     // Given a input point, find the closest point on the grid (by ceiling)
-
     let closest_points = closest_n_points(in_point, &model.grid_points, 4);
 
     // TODO: use a map()
@@ -278,10 +262,8 @@ pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
     let closest_yb = cmp::min(closest_points[2].y as i32, closest_points[3].y as i32);
     let closest_y = cmp::min(closest_ya, closest_yb);
 
-    //let closest_point = pt2(0.0, 0.0);
     let closest_point = pt2(closest_x as f32, closest_y as f32);
 
-    //println!("Closest point: {:?}", closest_point);
     closest_point
 }
 
