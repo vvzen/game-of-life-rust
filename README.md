@@ -19,4 +19,4 @@ Being a learning exercise, this implementation is not particularly efficient.
 
 The grid fully lives on the stack, since is modelled as arrays (not vectors), so the max size is quite limited. Plus, there's probably a few copies going around that might be avoided.
 
-As a future exercise, I might try to rewrite this using the `ndarray` crate, but for now I wanted to implement GoL without as few external dependencies as I could.
+As a future exercise, I might try to rewrite this using the `ndarray` crate, but for now I wanted to implement GoL with as few external dependencies as I could.
