@@ -83,12 +83,11 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
         for i in -1..2 {
             let index = x as i32 + i;
             let neighbour = top_row.values.get(index as usize);
-            match neighbour {
-                Some(_x) => neighbours.push(CellIndex {
+            if let Some(_x) = neighbour {
+                neighbours.push(CellIndex {
                     x: index as usize,
                     y: top_index,
-                }),
-                None => {}
+                })
             }
         }
     }
@@ -101,43 +100,31 @@ pub fn get_neighbours_indices(x: usize, y: usize, cells: Cells) -> Vec<CellIndex
         for i in -1..2 {
             let index = x as i32 + i;
             let neighbour = bottom_row.values.get(index as usize);
-            match neighbour {
-                Some(_x) => neighbours.push(CellIndex {
+            if let Some(_x) = neighbour {
+                neighbours.push(CellIndex {
                     x: index as usize,
                     y: bottom_index,
-                }),
-                None => {}
+                })
             }
         }
     }
 
     // Left and right neighbours
     let c = rows.get(y);
-    match c {
-        Some(central_row) => {
-            // Left
-            let l_index = x - 1;
-            let l_neighbour = central_row.values.get(l_index);
-            match l_neighbour {
-                Some(_l) => neighbours.push(CellIndex {
-                    x: l_index as usize,
-                    y,
-                }),
-                None => {}
-            }
-
-            // Right
-            let r_index = x + 1;
-            let r_neighbour = central_row.values.get(x + 1);
-            match r_neighbour {
-                Some(_r) => neighbours.push(CellIndex {
-                    x: r_index as usize,
-                    y,
-                }),
-                None => {}
-            }
+    if let Some(central_row) = c {
+        // Left
+        let l_index = x - 1;
+        let l_neighbour = central_row.values.get(l_index);
+        if let Some(_l) = l_neighbour {
+            neighbours.push(CellIndex { x: l_index, y })
         }
-        None => {}
+
+        // Right
+        let r_index = x + 1;
+        let r_neighbour = central_row.values.get(x + 1);
+        if let Some(_r) = r_neighbour {
+            neighbours.push(CellIndex { x: r_index, y })
+        }
     }
 
     neighbours
@@ -195,7 +182,7 @@ pub fn create_grid(app: &App, step_size: usize) -> Vec<Line> {
         lines.push(line_props);
     }
 
-    return lines;
+    lines
 }
 
 pub fn draw_cell(x: usize, y: usize, alive: &bool, model: &Model, canvas: &Draw) {
@@ -264,17 +251,13 @@ pub fn snap_to_grid(in_point: Point2, model: &Model) -> Point2 {
         .reduce(|accum, item| if accum < item { accum } else { item })
         .unwrap();
 
-    let closest_point = pt2(smallest_x, smallest_y);
-
-    closest_point
+    pt2(smallest_x, smallest_y)
 }
 
 pub fn get_all_cells_as_dead() -> [CellsRow; GRID_SIZE] {
-    let rows = [CellsRow {
+    [CellsRow {
         values: [Cell { is_alive: false }; GRID_SIZE],
-    }; GRID_SIZE];
-
-    rows
+    }; GRID_SIZE]
 }
 
 pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Cells {
@@ -286,14 +269,14 @@ pub fn init_cells(num_cells_x: usize, num_cells_y: usize, randomize: bool) -> Ce
 
         for y in 0..num_cells_y {
             if randomize {
-                values[y as usize].is_alive = generator.gen_bool(0.5);
+                values[y].is_alive = generator.gen_bool(0.5);
             } else {
-                values[y as usize].is_alive = false;
+                values[y].is_alive = false;
             }
         }
         let row = CellsRow { values };
 
-        rows[x as usize] = row;
+        rows[x] = row;
     }
 
     Cells { rows }

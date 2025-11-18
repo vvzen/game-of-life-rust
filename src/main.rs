@@ -40,8 +40,7 @@ fn key_pressed(_app: &App, model: &mut lib::Model, key: Key) {
 }
 
 fn mouse_pressed(_app: &App, model: &mut lib::Model, button: MouseButton) {
-    //
-    println!("Mouse pressed: {:?}", button);
+    println!("Mouse pressed: {button:?}");
     model.drawing_state = lib::DrawingState::Started;
     match button {
         MouseButton::Left => model.should_draw_white = true,
@@ -51,51 +50,44 @@ fn mouse_pressed(_app: &App, model: &mut lib::Model, button: MouseButton) {
 }
 
 fn mouse_moved(_app: &App, model: &mut lib::Model, pos: Point2) {
-    //
     model.last_mouse_pos = pt2(pos.x, pos.y);
 
     let closest_points = lib::closest_n_points(pos, &model.grid_points, 4);
     model.closest_points = closest_points;
 
-    match model.state {
-        lib::AppState::Init => {
-            match model.drawing_state {
-                // Start drawing
-                lib::DrawingState::Started => {
-                    // Snap the point to the grid
-                    let snapped = lib::snap_to_grid(pos, &model);
+    if let lib::AppState::Init = model.state {
+        // Start drawing
+        if let lib::DrawingState::Started = model.drawing_state {
+            // Snap the point to the grid
+            let snapped = lib::snap_to_grid(pos, model);
 
-                    // Discard clicks outside the target area
-                    if snapped.x.abs() > model.app_width * 0.5 {
-                        return;
-                    }
-                    if snapped.y.abs() > model.app_height * 0.5 {
-                        return;
-                    }
-
-                    // Map the point to a cell in the grid
-                    let cell_index_x = map_range(
-                        snapped.x,
-                        -model.app_width * 0.5,
-                        model.app_width * 0.5,
-                        0,
-                        model.num_cells_x,
-                    );
-                    let cell_index_y = map_range(
-                        snapped.y,
-                        -model.app_height * 0.5,
-                        model.app_height * 0.5,
-                        model.num_cells_y - 1,
-                        0,
-                    );
-
-                    let is_alive = model.should_draw_white;
-                    model.cells.rows[cell_index_x].values[cell_index_y].is_alive = is_alive;
-                }
-                _ => {}
+            // Discard clicks outside the target area
+            if snapped.x.abs() > model.app_width * 0.5 {
+                return;
             }
+            if snapped.y.abs() > model.app_height * 0.5 {
+                return;
+            }
+
+            // Map the point to a cell in the grid
+            let cell_index_x = map_range(
+                snapped.x,
+                -model.app_width * 0.5,
+                model.app_width * 0.5,
+                0,
+                model.num_cells_x,
+            );
+            let cell_index_y = map_range(
+                snapped.y,
+                -model.app_height * 0.5,
+                model.app_height * 0.5,
+                model.num_cells_y - 1,
+                0,
+            );
+
+            let is_alive = model.should_draw_white;
+            model.cells.rows[cell_index_x].values[cell_index_y].is_alive = is_alive;
         }
-        _ => {}
     }
 }
 
@@ -103,11 +95,8 @@ fn mouse_released(_app: &App, model: &mut lib::Model, _button: MouseButton) {
     //
     //println!("Mouse released");
 
-    match model.drawing_state {
-        lib::DrawingState::Started => {
-            model.drawing_state = lib::DrawingState::Ended;
-        }
-        _ => {}
+    if let lib::DrawingState::Started = model.drawing_state {
+        model.drawing_state = lib::DrawingState::Ended;
     }
 }
 
@@ -126,8 +115,8 @@ fn model(app: &App) -> lib::Model {
     //app.main_window().set_resizable(false);
 
     let window_rect = app.window_rect();
-    let width = window_rect.w() as f32;
-    let height = window_rect.h() as f32;
+    let width = window_rect.w();
+    let height = window_rect.h();
 
     let num_cells_x = width as i32 / lib::CELL_SIZE as i32;
     let num_cells_y = height as i32 / lib::CELL_SIZE as i32;
@@ -150,7 +139,7 @@ fn model(app: &App) -> lib::Model {
     // Create the lines that make up the grid
     let lines = lib::create_grid(app, lib::CELL_SIZE);
 
-    println!("Canvas size is {}x{}", width, height);
+    println!("Canvas size is {width}x{height}");
     println!("Cell size is {}", lib::CELL_SIZE);
 
     println!("INSTRUCTIONS:");
@@ -186,13 +175,10 @@ fn update(app: &App, model: &mut lib::Model, _update: Update) {
     }
 
     // Do the game of life only when needed
-    match model.state {
-        lib::AppState::Running => {
-            lib::game_of_life(model);
-            model.generations = model.generations + 1;
-            println!("Generation: {}", model.generations);
-        }
-        _ => return,
+    if let lib::AppState::Running = model.state {
+        lib::game_of_life(model);
+        model.generations += 1;
+        println!("Generation: {}", model.generations);
     }
 }
 
